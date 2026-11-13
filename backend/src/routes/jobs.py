@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import Response
 from sqlalchemy import select
 from src.config.database import get_db
 from src.models import Job
@@ -20,6 +21,14 @@ def detail(id:int,db=Depends(get_db),u=Depends(current_user)):
     j=db.get(Job,id)
     if not j: raise HTTPException(404,'分析任务不存在')
     return job_dict(j)
+@router.get('/{id}/detail.csv')
+def detail_csv(id:int,side:str='',db=Depends(get_db),u=Depends(current_user)):
+    j=db.get(Job,id)
+    if not j: raise HTTPException(404,'分析任务不存在')
+    data,filename=jobs.detail_csv(j,side or None)
+    record(db,u.email,'job.download',{'id':id,'side':side or 'all'})
+    db.commit()
+    return Response(content=data,media_type='text/csv; charset=utf-8',headers={'Content-Disposition':f'attachment; filename="{filename}"'})
 @router.post('/{id}/approve')
 def approve(id:int,db=Depends(get_db),u=Depends(admin_only)):
     j=db.get(Job,id)

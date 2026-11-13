@@ -38,6 +38,10 @@ COMPOSE_PROJECT_NAME=water-triage；FRONTEND_PORT=18208；BACKEND_PORT=19208；D
 
 ## 数据与验收
 所有数据为固定随机种子生成的模拟业务数据，不能作为实际生产决策证据。项目独立算法、输入边界及业务局限详见 BUSINESS.md。测试与截图统一存放 ../../test-artifacts/gb-1009/，源码不含日志/截图/测试报告。
+
+## 管段隔离划分（segment-hash-v1）
+分析任务按管段编号做带盐 SHA-256 哈希取模 1000，桶号 <300 的管段整体进验证侧、其余进训练侧；同一管段的全部复测记录始终同侧，避免复测样本同时用于训练和验证而抬高漏点召回率。归属只取决于管段编号，与导入顺序、树参数无关。训练/验证两侧都必须同时含漏点与非漏点样本，否则任务失败并说明原因（缺失 segment_id、同管段标签冲突、单侧缺类均不生成成功结果）。
+结果新增 `schema_version=2`、`split`、`metric_groups`，明细逐行含划分归属、哈希桶与样本类别；页面可按侧筛选，`GET /jobs/{id}/detail.csv?side=训练|验证` 下载带口径文件头的明细。升级前完成的历史任务（无 `split` 字段）按旧口径原样可查、可下载，页面与 CSV 标注 legacy，不回填或重算。
 清理本项目演示数据：`docker compose down -v --remove-orphans`（会删除本项目命名卷）。
 
 ## License
